@@ -1,0 +1,10 @@
+{
+  "id": "community",
+  "name": "Community",
+  "version": "1.0.0",
+  "minAppVersion": "0.1.234",
+  "description": "Browse, import and share ambience presets made by other Noctívago users.",
+  "author": "Noctívago",
+  "main": "main.js",
+  "styles": "styles.css"
+}
