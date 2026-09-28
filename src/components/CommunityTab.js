@@ -10,7 +10,7 @@
 // Everything that comes from the server is rendered with textContent, never
 // innerHTML - preset names, descriptions and tags are user-written.
 
-import { PAGE_SIZE, MAX_TAGS_SHOWN, REPORT_REASONS, formatSize, formatDate, plural, parseTags, sizeRows } from '../domain/format.js'
+import { PAGE_SIZE, MAX_TAGS_SHOWN, REPORT_REASONS, formatSize, formatDate, plural, parseTags, sizeRows, estimateTotal } from '../domain/format.js'
 import { el } from './el.js'
 
 export default class CommunityPlugin {
@@ -26,6 +26,12 @@ export default class CommunityPlugin {
     this.pendingImportCard = null
     this.publishing = false
     this.localPresets = []
+    // Size list state: the app's last sound report, and the indexes the user
+    // marked "Cut to 15 s" (sent with the next Share).
+    this.shareSounds = null
+    this.shareMarkHeaviest = false
+    this.cutSet = new Set()
+    this.maxUploadBytes = 50 * 1024 * 1024
   }
 
   async onload() {
@@ -154,6 +160,8 @@ export default class CommunityPlugin {
     this.els.sharePreset.addEventListener('change', () => {
       const preset = this.localPresets.find((p) => p.id === this.els.sharePreset.value)
       if (preset && !this.shareTarget) this.els.shareName.value = preset.name
+      this.cutSet.clear()
+      this.showShareSizes(null)
     })
     this.els.shareForm.addEventListener('submit', (evt) => {
       evt.preventDefault()
@@ -460,6 +468,7 @@ export default class CommunityPlugin {
       this.els.shareTags.value = ''
     }
     this.els.shareRights.checked = false
+    this.cutSet.clear()
     this.showShareSizes(null)
   }
 
@@ -471,17 +480,48 @@ export default class CommunityPlugin {
   }
 
   // sounds from the app's progress/result, or null to hide the list.
-  showShareSizes(sounds, options) {
+  showShareSizes(sounds, { markHeaviest = false } = {}) {
+    this.shareSounds = sounds
+    this.shareMarkHeaviest = markHeaviest
+    this.renderShareSizes()
+  }
+
+  renderShareSizes() {
     const list = this.els.shareSizes
-    const rows = sizeRows(sounds, options)
+    const rows = sizeRows(this.shareSounds, { markHeaviest: this.shareMarkHeaviest, cutSet: this.cutSet })
     list.classList.toggle('hidden', rows.length === 0)
     list.replaceChildren(
       ...rows.map((row) => {
         const item = el('li', row.heavy ? 'community-size heavy' : 'community-size')
-        item.append(el('span', 'community-size-name', row.name), el('span', 'community-size-detail', row.detail))
+        const name = el('span', 'community-size-name-wrap')
+        name.append(el('span', 'community-size-name', row.name))
+        // Offered only after a too-large attempt, when the sizes are known.
+        if (row.canCut && this.shareMarkHeaviest && !this.publishing) {
+          const btn = el('button', 'community-cut-btn', row.marked ? 'Undo cut' : 'Cut to 15 s')
+          btn.type = 'button'
+          btn.title = row.marked
+            ? 'Upload the whole sound again'
+            : 'Upload only 15 seconds from the middle of the part the preset plays. Your own copy stays as it is.'
+          btn.addEventListener('click', () => this.toggleCut(row.index))
+          name.append(btn)
+        }
+        item.append(name, el('span', 'community-size-detail', row.detail))
         return item
       })
     )
+  }
+
+  toggleCut(index) {
+    if (this.cutSet.has(index)) this.cutSet.delete(index)
+    else this.cutSet.add(index)
+    this.renderShareSizes()
+    const total = estimateTotal(this.shareSounds, this.cutSet)
+    if (total === null) return
+    const fits = total <= this.maxUploadBytes
+    const limit = formatSize(this.maxUploadBytes)
+    this.els.shareStatus.textContent = fits
+      ? `About ${formatSize(total)} now, under the ${limit} limit. Press ${this.els.shareSubmit.textContent} to upload.`
+      : `About ${formatSize(total)} now; the limit is ${limit}. Cut or remove more sounds.`
   }
 
   async publish() {
@@ -514,7 +554,8 @@ export default class CommunityPlugin {
         author,
         description: this.els.shareDescription.value,
         tags: parseTags(this.els.shareTags.value),
-        rightsConfirmed: true
+        rightsConfirmed: true,
+        cutSounds: [...this.cutSet]
       })
     } catch (err) {
       result = { ok: false, error: err?.message }
@@ -530,6 +571,7 @@ export default class CommunityPlugin {
       return
     }
     const wasUpdate = Boolean(this.shareTarget)
+    this.cutSet.clear()
     this.setShareTarget(null)
     this.showShareSizes(result.sounds ?? null)
     const linked = result.freesoundCount ? `, ${result.freesoundCount} linked from Freesound` : ''
