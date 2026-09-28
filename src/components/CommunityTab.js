@@ -10,7 +10,7 @@
 // Everything that comes from the server is rendered with textContent, never
 // innerHTML - preset names, descriptions and tags are user-written.
 
-import { PAGE_SIZE, MAX_TAGS_SHOWN, REPORT_REASONS, formatSize, formatDate, plural, parseTags } from '../domain/format.js'
+import { PAGE_SIZE, MAX_TAGS_SHOWN, REPORT_REASONS, formatSize, formatDate, plural, parseTags, sizeRows } from '../domain/format.js'
 import { el } from './el.js'
 
 export default class CommunityPlugin {
@@ -107,7 +107,9 @@ export default class CommunityPlugin {
               <button id="community-share-cancel" class="btn hidden" type="button">Cancel update</button>
               <button id="community-share-submit" class="btn btn-primary" type="submit">Share</button>
             </div>
+            <progress id="community-share-progress" class="community-progress hidden" max="1" value="0"></progress>
             <p id="community-share-status" class="community-status"></p>
+            <ul id="community-share-sizes" class="community-sizes hidden"></ul>
           </form>
         </section>
       </div>
@@ -136,7 +138,9 @@ export default class CommunityPlugin {
       shareRights: q('#community-share-rights'),
       shareCancel: q('#community-share-cancel'),
       shareSubmit: q('#community-share-submit'),
-      shareStatus: q('#community-share-status')
+      shareStatus: q('#community-share-status'),
+      shareProgress: q('#community-share-progress'),
+      shareSizes: q('#community-share-sizes')
     }
 
     for (const pill of this.els.pills) {
@@ -456,6 +460,28 @@ export default class CommunityPlugin {
       this.els.shareTags.value = ''
     }
     this.els.shareRights.checked = false
+    this.showShareSizes(null)
+  }
+
+  // fraction 0..1, or null to hide the bar.
+  showShareProgress(fraction) {
+    const bar = this.els.shareProgress
+    bar.classList.toggle('hidden', fraction === null)
+    if (fraction !== null) bar.value = Math.max(0, Math.min(1, fraction))
+  }
+
+  // sounds from the app's progress/result, or null to hide the list.
+  showShareSizes(sounds, options) {
+    const list = this.els.shareSizes
+    const rows = sizeRows(sounds, options)
+    list.classList.toggle('hidden', rows.length === 0)
+    list.replaceChildren(
+      ...rows.map((row) => {
+        const item = el('li', row.heavy ? 'community-size heavy' : 'community-size')
+        item.append(el('span', 'community-size-name', row.name), el('span', 'community-size-detail', row.detail))
+        return item
+      })
+    )
   }
 
   async publish() {
@@ -472,8 +498,12 @@ export default class CommunityPlugin {
     this.publishing = true
     this.els.shareSubmit.disabled = true
     status.textContent = 'Preparing…'
+    this.showShareProgress(0)
+    this.showShareSizes(null)
     const stopProgress = this.api.community.onPublishProgress((update) => {
       if (update?.message) status.textContent = update.message
+      if (Number.isFinite(update?.fraction)) this.showShareProgress(update.fraction)
+      if (update?.sounds) this.showShareSizes(update.sounds)
     })
     let result
     try {
@@ -492,13 +522,16 @@ export default class CommunityPlugin {
       stopProgress()
       this.publishing = false
       this.els.shareSubmit.disabled = false
+      this.showShareProgress(null)
     }
     if (!result.ok) {
       status.textContent = result.error || 'Sharing failed.'
+      if (result.sounds) this.showShareSizes(result.sounds, { markHeaviest: true })
       return
     }
     const wasUpdate = Boolean(this.shareTarget)
     this.setShareTarget(null)
+    this.showShareSizes(result.sounds ?? null)
     const linked = result.freesoundCount ? `, ${result.freesoundCount} linked from Freesound` : ''
     status.textContent = `${wasUpdate ? 'Updated' : 'Shared'} "${result.preset.name}" (${plural(result.uploadedAudioCount, 'sound')} uploaded${linked}).`
     this.search()
