@@ -10,8 +10,9 @@
 // Everything that comes from the server is rendered with textContent, never
 // innerHTML - preset names, descriptions and tags are user-written.
 
-import { PAGE_SIZE, MAX_TAGS_SHOWN, REPORT_REASONS, formatSize, formatDate, plural, parseTags, sizeRows, estimateTotal } from '../domain/format.js'
+import { PAGE_SIZE, REPORT_REASONS, formatSize, formatDate, plural, parseTags, sizeRows, estimateTotal, printBars, cardTags } from '../domain/format.js'
 import { el } from './el.js'
+import { icon } from './icons.js'
 
 export default class CommunityPlugin {
   constructor(app) {
@@ -57,65 +58,62 @@ export default class CommunityPlugin {
     this.unregister?.()
   }
 
+  // Desktop 2.0 (step 17): the approved mock's `community`,
+  // `community-share` and `community-mine` screens. A Browse / My uploads /
+  // Share switch, a search row, and preset cards with the same fingerprint
+  // card the Presets gallery uses.
   mount(container) {
     container.innerHTML = `
       <div class="community-tab">
-        <p class="community-hint">Ambiences made by other Noctívago users. Importing adds the preset and its sounds to your library. Sounds from Freesound are downloaded from Freesound; the rest come with the preset.</p>
-        <div class="community-view-switch" role="tablist">
-          <button type="button" class="community-pill active" data-view="browse">Browse</button>
-          <button type="button" class="community-pill" data-view="mine">My uploads</button>
-          <button type="button" class="community-pill" data-view="share">Share a preset</button>
-        </div>
-        <p id="community-unavailable" class="modal-hint hidden"></p>
-
-        <section id="community-browse" class="community-view">
-          <div class="community-search-row">
-            <input id="community-query" type="text" placeholder="rain, cabin, forest night…" autocomplete="off" />
-            <select id="community-sort">
-              <option value="new">Newest</option>
-              <option value="popular">Most downloaded</option>
-            </select>
-            <button id="community-search-btn" class="btn btn-primary" type="button">Search</button>
+        <div class="cm-tools cm-sub">
+          <div class="cm-seg" role="group" aria-label="Community">
+            <button type="button" data-view="browse" aria-pressed="true">Browse</button>
+            <button type="button" data-view="mine" aria-pressed="false">My uploads</button>
+            <button type="button" data-view="share" aria-pressed="false">Share</button>
           </div>
-          <p id="community-status" class="community-status"></p>
-          <div id="community-results" class="community-results"></div>
-          <div id="community-sentinel" class="community-sentinel hidden"></div>
+        </div>
+        <p id="community-unavailable" class="cm-hint" hidden></p>
+
+        <section id="community-browse" class="cm-view">
+          <div class="cm-tools">
+            <input id="community-query" class="cm-field cm-grow" type="text" placeholder="rain, cabin, forest night…" autocomplete="off" aria-label="Search presets" />
+            <select id="community-sort" class="cm-field" aria-label="Sort">
+              <option value="popular">Most downloaded</option>
+              <option value="new">Newest</option>
+            </select>
+            <button id="community-search-btn" class="cm-b cm-pri" type="button">${icon('search')}Search</button>
+          </div>
+          <p class="cm-hint">Ambiences made by other Noctívago users. Importing adds the preset and its sounds to your library. Sounds from Freesound are downloaded from Freesound; the rest come with the preset.</p>
+          <p id="community-status" class="cm-hint" aria-live="polite"></p>
+          <div id="community-results" class="cm-tiles"></div>
+          <div id="community-sentinel" class="cm-sentinel" hidden></div>
         </section>
 
-        <section id="community-mine" class="community-view hidden">
-          <p id="community-mine-status" class="community-status"></p>
-          <div id="community-mine-results" class="community-results"></div>
+        <section id="community-mine" class="cm-view" hidden>
+          <p id="community-mine-status" class="cm-hint" aria-live="polite"></p>
+          <div id="community-mine-results" class="cm-tiles"></div>
         </section>
 
-        <section id="community-share" class="community-view hidden">
-          <form id="community-share-form" class="community-share-form">
-            <p id="community-share-mode" class="community-share-mode hidden"></p>
-            <label class="field-label">Preset to share
-              <select id="community-share-preset"></select>
-            </label>
-            <label class="field-label">Name
-              <input id="community-share-name" type="text" maxlength="80" />
-            </label>
-            <label class="field-label">Your name (shown on the preset)
-              <input id="community-share-author" type="text" maxlength="40" />
-            </label>
-            <label class="field-label">Description
-              <textarea id="community-share-description" rows="3" maxlength="600" placeholder="What does it sound like? Where does it take you?"></textarea>
-            </label>
-            <label class="field-label">Tags (comma-separated)
-              <input id="community-share-tags" type="text" placeholder="rain, night, cozy" />
-            </label>
-            <label class="community-rights">
-              <input id="community-share-rights" type="checkbox" />
-              I made these sounds or have the right to share them. Sounds imported from Freesound are linked, not re-uploaded.
-            </label>
-            <div class="community-share-actions">
-              <button id="community-share-cancel" class="btn hidden" type="button">Cancel update</button>
-              <button id="community-share-submit" class="btn btn-primary" type="submit">Share</button>
+        <section id="community-share" class="cm-view" hidden>
+          <form id="community-share-form" class="cm-sharef">
+            <div class="cm-card">
+              <h2 class="cm-gh">Share a preset</h2>
+              <p id="community-share-mode" class="cm-hint cm-l" hidden></p>
+              <div class="cm-row"><div class="cm-sl"><span>Preset</span></div><div class="cm-trail"><select id="community-share-preset" class="cm-field cm-w224" aria-label="Preset"></select></div></div>
+              <label class="cm-fl">Name<input id="community-share-name" class="cm-field" type="text" maxlength="80" /></label>
+              <label class="cm-fl">Description<textarea id="community-share-description" class="cm-field cm-ta" maxlength="600" placeholder="What does it sound like? Where does it take you?"></textarea></label>
+              <label class="cm-fl">Tags<input id="community-share-tags" class="cm-field" type="text" placeholder="rain, night, cozy" /></label>
+              <label class="cm-fl">Your name (shown on the preset)<input id="community-share-author" class="cm-field" type="text" maxlength="40" /></label>
+              <label class="cm-row cm-rights"><div class="cm-sl"><span>I made these sounds or have the right to share them</span><small>Sounds imported from Freesound are linked, not re-uploaded.</small></div><div class="cm-trail"><input id="community-share-rights" class="cm-sw" type="checkbox" role="switch" /></div></label>
+              <div class="cm-actions">
+                <button id="community-share-cancel" class="cm-b cm-ghost" type="button" hidden>Cancel update</button>
+                <button id="community-share-submit" class="cm-b cm-pri" type="submit">${icon('upload')}<span>Share</span></button>
+              </div>
+              <div id="community-share-progress" class="cm-sb" hidden><i></i></div>
+              <p id="community-share-status" class="cm-hint" aria-live="polite"></p>
+              <ul id="community-share-sizes" class="cm-sizes" hidden></ul>
             </div>
-            <progress id="community-share-progress" class="community-progress hidden" max="1" value="0"></progress>
-            <p id="community-share-status" class="community-status"></p>
-            <ul id="community-share-sizes" class="community-sizes hidden"></ul>
+            <p class="cm-hint">Your uploads are public. Only what you share is sent.</p>
           </form>
         </section>
       </div>
@@ -123,7 +121,7 @@ export default class CommunityPlugin {
 
     const q = (sel) => container.querySelector(sel)
     this.els = {
-      pills: [...container.querySelectorAll('.community-pill')],
+      pills: [...container.querySelectorAll('[data-view]')],
       unavailable: q('#community-unavailable'),
       views: { browse: q('#community-browse'), mine: q('#community-mine'), share: q('#community-share') },
       query: q('#community-query'),
@@ -188,7 +186,7 @@ export default class CommunityPlugin {
     this.els.shareAuthor.value = profile.authorName || ''
     if (!this.available) {
       this.els.unavailable.textContent = 'Community presets are not available in this build.'
-      this.els.unavailable.classList.remove('hidden')
+      this.els.unavailable.hidden = false
       for (const btn of [this.els.searchBtn, this.els.shareSubmit]) btn.disabled = true
       return
     }
@@ -197,8 +195,8 @@ export default class CommunityPlugin {
 
   showView(view) {
     this.view = view
-    for (const pill of this.els.pills) pill.classList.toggle('active', pill.dataset.view === view)
-    for (const [key, section] of Object.entries(this.els.views)) section.classList.toggle('hidden', key !== view)
+    for (const pill of this.els.pills) pill.setAttribute('aria-pressed', String(pill.dataset.view === view))
+    for (const [key, section] of Object.entries(this.els.views)) section.hidden = key !== view
     if (!this.available) return
     if (view === 'mine') this.loadMine()
     if (view === 'share') this.refreshLocalPresets()
@@ -240,7 +238,7 @@ export default class CommunityPlugin {
     this.loading = false
     if (!result.ok) {
       this.els.status.textContent = result.error || 'Could not load presets.'
-      this.els.sentinel.classList.add('hidden')
+      this.els.sentinel.hidden = true
       return
     }
     this.page += 1
@@ -253,64 +251,80 @@ export default class CommunityPlugin {
           ? 'No presets match that search.'
           : 'No presets shared yet. Be the first!'
         : plural(count, 'preset')
-    this.els.sentinel.classList.toggle('hidden', !this.hasMore)
+    this.els.sentinel.hidden = !this.hasMore
   }
 
   renderCard(preset, { mine }) {
-    const card = el('article', 'community-card')
+    const card = el('article', 'cm-pcard')
     card.dataset.id = preset.id
 
-    const header = el('div', 'community-card-header')
-    header.appendChild(el('span', 'community-card-name', preset.name))
-    if (preset.hidden) header.appendChild(el('span', 'community-card-badge', 'Hidden (reported)'))
-    card.appendChild(header)
+    const print = el('div', 'cm-print')
+    print.setAttribute('aria-hidden', 'true')
+    for (const h of printBars(preset.id, preset.soundCount)) {
+      const bar = el('i')
+      bar.style.height = h + 'px'
+      print.appendChild(bar)
+    }
+    card.appendChild(print)
 
-    const meta = [
-      `by ${preset.author}`,
-      plural(preset.soundCount, 'sound'),
-      formatSize(preset.sizeBytes),
-      plural(preset.downloads ?? 0, 'download'),
-      formatDate(preset.updatedAt || preset.createdAt)
-    ].filter(Boolean)
-    card.appendChild(el('div', 'community-card-meta', meta.join(' · ')))
+    const name = el('div', 'cm-pname', preset.name)
+    name.title = preset.name
+    card.appendChild(name)
 
-    if (preset.description) card.appendChild(el('p', 'community-card-desc', preset.description))
+    // The mock's line is author, sounds and downloads; size and date stay
+    // on a second line, as the source always showed them.
+    const meta = [mine ? null : `by ${preset.author}`, plural(preset.soundCount, 'sound'), plural(preset.downloads ?? 0, 'download')].filter(Boolean)
+    const metaEl = el('div', 'cm-meta', meta.join(' · '))
+    metaEl.title = metaEl.textContent
+    card.appendChild(metaEl)
+    const sub = [formatSize(preset.sizeBytes), formatDate(preset.updatedAt || preset.createdAt)].filter(Boolean)
+    if (sub.length) card.appendChild(el('div', 'cm-meta', sub.join(' · ')))
 
-    if (preset.tags?.length) {
-      const tags = el('div', 'community-card-tags')
-      for (const tag of preset.tags.slice(0, MAX_TAGS_SHOWN)) tags.appendChild(el('span', 'community-tag', tag))
-      if (preset.tags.length > MAX_TAGS_SHOWN) {
-        tags.appendChild(el('span', 'community-tag community-tag-more', `+${preset.tags.length - MAX_TAGS_SHOWN}`))
-      }
-      card.appendChild(tags)
+    if (preset.description) {
+      const desc = el('p', 'cm-desc', preset.description)
+      desc.title = preset.description
+      card.appendChild(desc)
     }
 
-    const status = el('div', 'community-card-status')
-    const footer = el('div', 'community-card-footer')
-    footer.appendChild(status)
+    const { shown, more } = cardTags(preset.tags)
+    const chips = el('div', 'cm-chips')
+    if (preset.hidden) chips.appendChild(el('span', 'cm-chip cm-hot', 'Hidden (reported)'))
+    for (const tag of shown) chips.appendChild(el('span', 'cm-chip', tag))
+    if (more) {
+      const moreChip = el('span', 'cm-chip cm-more', `+${more}`)
+      moreChip.title = preset.tags.slice(shown.length).join(', ')
+      chips.appendChild(moreChip)
+    }
+    card.appendChild(chips)
+
+    const status = el('div', 'cm-status')
+    status.setAttribute('aria-live', 'polite')
+    const footer = el('div', 'cm-actions')
 
     if (mine) {
-      const updateBtn = el('button', 'btn btn-small', 'Update…')
+      const updateBtn = el('button', 'cm-b', 'Update')
       updateBtn.type = 'button'
       updateBtn.title = 'Replace this upload with the current version of one of your presets'
       updateBtn.addEventListener('click', () => {
         this.setShareTarget(preset)
         this.showView('share')
       })
-      const deleteBtn = el('button', 'btn btn-small', 'Delete')
+      const deleteBtn = el('button', 'cm-b cm-ghost', 'Delete')
       deleteBtn.type = 'button'
       deleteBtn.addEventListener('click', () => this.deleteUpload(preset, card, status))
       footer.append(updateBtn, deleteBtn)
     } else {
-      const reportBtn = el('button', 'community-report-link', 'Report')
+      const importBtn = el('button', 'cm-b')
+      importBtn.type = 'button'
+      importBtn.innerHTML = icon('download') + '<span>Import</span>'
+      importBtn.addEventListener('click', () => this.importPreset(preset, importBtn, status))
+      // Not drawn in the mock; kept from the source, quiet beside Import.
+      const reportBtn = el('button', 'cm-b cm-ghost', 'Report')
       reportBtn.type = 'button'
       reportBtn.addEventListener('click', () => this.toggleReportForm(card, preset, status))
-      const importBtn = el('button', 'btn btn-primary btn-small', 'Import')
-      importBtn.type = 'button'
-      importBtn.addEventListener('click', () => this.importPreset(preset, importBtn, status))
-      footer.append(reportBtn, importBtn)
+      footer.append(importBtn, reportBtn)
     }
-    card.appendChild(footer)
+    card.append(footer, status)
     return card
   }
 
@@ -358,19 +372,19 @@ export default class CommunityPlugin {
   }
 
   toggleReportForm(card, preset, status) {
-    const existing = card.querySelector('.community-report-form')
+    const existing = card.querySelector('.cm-report')
     if (existing) {
       existing.remove()
       return
     }
-    const form = el('div', 'community-report-form')
-    const select = el('select')
+    const form = el('div', 'cm-report')
+    const select = el('select', 'cm-field')
     for (const [value, label] of REPORT_REASONS) {
       const option = el('option', null, label)
       option.value = value
       select.appendChild(option)
     }
-    const send = el('button', 'btn btn-small', 'Send report')
+    const send = el('button', 'cm-b', 'Send report')
     send.type = 'button'
     send.addEventListener('click', async () => {
       send.disabled = true
@@ -453,9 +467,9 @@ export default class CommunityPlugin {
   // remote: a "My uploads" entry to replace, or null for a new share.
   setShareTarget(remote) {
     this.shareTarget = remote
-    this.els.shareMode.classList.toggle('hidden', !remote)
-    this.els.shareCancel.classList.toggle('hidden', !remote)
-    this.els.shareSubmit.textContent = remote ? 'Update' : 'Share'
+    this.els.shareMode.hidden = !remote
+    this.els.shareCancel.hidden = !remote
+    this.els.shareSubmit.querySelector('span').textContent = remote ? 'Update' : 'Share'
     this.els.shareStatus.textContent = ''
     if (remote) {
       this.els.shareMode.textContent = `Updating "${remote.name}" - pick the local preset to upload in its place.`
@@ -475,8 +489,8 @@ export default class CommunityPlugin {
   // fraction 0..1, or null to hide the bar.
   showShareProgress(fraction) {
     const bar = this.els.shareProgress
-    bar.classList.toggle('hidden', fraction === null)
-    if (fraction !== null) bar.value = Math.max(0, Math.min(1, fraction))
+    bar.hidden = fraction === null
+    if (fraction !== null) bar.firstElementChild.style.width = `${Math.round(Math.max(0, Math.min(1, fraction)) * 100)}%`
   }
 
   // sounds from the app's progress/result, or null to hide the list.
@@ -489,15 +503,15 @@ export default class CommunityPlugin {
   renderShareSizes() {
     const list = this.els.shareSizes
     const rows = sizeRows(this.shareSounds, { markHeaviest: this.shareMarkHeaviest, cutSet: this.cutSet })
-    list.classList.toggle('hidden', rows.length === 0)
+    list.hidden = rows.length === 0
     list.replaceChildren(
       ...rows.map((row) => {
-        const item = el('li', row.heavy ? 'community-size heavy' : 'community-size')
-        const name = el('span', 'community-size-name-wrap')
-        name.append(el('span', 'community-size-name', row.name))
+        const item = el('li', row.heavy ? 'cm-size heavy' : 'cm-size')
+        const name = el('span', 'cm-size-name-wrap')
+        name.append(el('span', 'cm-size-name', row.name))
         // Offered only after a too-large attempt, when the sizes are known.
         if (row.canCut && this.shareMarkHeaviest && !this.publishing) {
-          const btn = el('button', 'community-cut-btn', row.marked ? 'Undo cut' : 'Cut to 15 s')
+          const btn = el('button', 'cm-b cm-ghost cm-sm', row.marked ? 'Undo cut' : 'Cut to 15 s')
           btn.type = 'button'
           btn.title = row.marked
             ? 'Upload the whole sound again'
@@ -505,7 +519,7 @@ export default class CommunityPlugin {
           btn.addEventListener('click', () => this.toggleCut(row.index))
           name.append(btn)
         }
-        item.append(name, el('span', 'community-size-detail', row.detail))
+        item.append(name, el('span', 'cm-size-detail', row.detail))
         return item
       })
     )
@@ -520,7 +534,7 @@ export default class CommunityPlugin {
     const fits = total <= this.maxUploadBytes
     const limit = formatSize(this.maxUploadBytes)
     this.els.shareStatus.textContent = fits
-      ? `About ${formatSize(total)} now, under the ${limit} limit. Press ${this.els.shareSubmit.textContent} to upload.`
+      ? `About ${formatSize(total)} now, under the ${limit} limit. Press ${this.els.shareSubmit.textContent.trim()} to upload.`
       : `About ${formatSize(total)} now; the limit is ${limit}. Cut or remove more sounds.`
   }
 

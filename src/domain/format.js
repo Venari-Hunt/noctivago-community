@@ -88,3 +88,23 @@ export function sizeRows(sounds, { markHeaviest = false, cutSet = new Set() } = 
     }
   })
 }
+
+// The card's fingerprint (Desktop 2.0, the mock's `.print`): one bar per
+// sound, up to 24, with heights from a seed of the preset id so a preset
+// always draws the same. The listing does not say which sounds loop and
+// which are random, so every bar is the loop gray.
+export const PRINT_MAX_BARS = 24
+export function printBars(id, soundCount) {
+  let h = 7
+  for (const c of String(id ?? '')) h = (h * 31 + c.charCodeAt(0)) >>> 0
+  const next = () => (h = (h * 1664525 + 1013904223) >>> 0) / 4294967296
+  const n = Math.max(1, Math.min(PRINT_MAX_BARS, Number(soundCount) || 1))
+  return Array.from({ length: n }, () => Math.round(14 + next() * 42))
+}
+
+// Tags on a card: as many as fit the one-line chip row, then "+N".
+export const CARD_TAGS = 3
+export function cardTags(tags) {
+  const list = Array.isArray(tags) ? tags : []
+  return { shown: list.slice(0, CARD_TAGS), more: Math.max(0, list.length - CARD_TAGS) }
+}

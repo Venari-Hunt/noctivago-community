@@ -1,312 +1,99 @@
-.community-tab {
-  padding: 16px;
-}
+/* Community, Desktop 2.0 (step 17). Every value comes from the approved
+   mock (Global Management design-system/mocks/noctivago-look.mjs and
+   noctivago-desktop.mjs: .tools, .tools.sub, .grow, .seg, .field, .b, .sw,
+   .hint, .card, .gh.l, .srowset, .fl, .ta, .w224, .row, .tiles.wide,
+   .pcard, .print, .pname, .meta, .chips, .chip, .chip.more, .sharef, .sb),
+   mapped to the app tokens: --bg g0, --surface g1, --surface-alt g2,
+   --surface-hover g3, --text ink, --text-dim mute, --accent amber, --tint,
+   --tint-ink, --radius 12. Hover shades are the literals the mock uses. */
 
-.community-hint {
-  margin: 0 0 12px;
-  font-size: 12px;
-  color: var(--text-dim);
-  max-width: 900px;
-}
+.community-tab { display: flex; flex-direction: column; gap: 16px; min-height: 100%; }
+.community-tab [hidden] { display: none !important; }
+.cm-icon { width: 16px; height: 16px; flex: none; }
+.cm-view { display: flex; flex-direction: column; gap: 16px; }
 
-.community-view-switch {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
-}
+.cm-tools { display: flex; gap: 8px; align-items: center; justify-content: center; width: 100%; max-width: 960px; margin-inline: auto; flex: none; }
+.cm-tools.cm-sub { flex-wrap: wrap; }
+.cm-grow { flex: 1; }
 
-.community-pill {
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--surface-alt);
-  color: var(--text-dim);
-  font-size: 12px;
-  cursor: pointer;
-}
+.cm-hint { margin: 0; color: var(--text-dim); text-align: center; font-size: 13px; }
+.cm-hint.cm-l { text-align: left; font-size: 12px; line-height: 16px; }
+.cm-hint:empty { display: none; }
 
-.community-pill.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--bg, #111);
-}
+.cm-seg { display: inline-flex; padding: 2px; background: var(--surface); border-radius: var(--radius); }
+.cm-seg button { height: 28px; padding-inline: 12px; border: 0; border-radius: 10px; background: transparent; color: var(--text-dim); font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.cm-seg button:hover { color: var(--text); }
+.cm-seg button[aria-pressed="true"] { background: var(--surface-hover); color: var(--text); }
 
-.community-search-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
+.cm-field { height: 32px; padding-inline: 12px; border: 0; border-radius: var(--radius); background: var(--surface-alt); color: var(--text); min-width: 0; font: inherit; box-sizing: border-box; }
+.cm-field::placeholder { color: var(--text-dim); }
+select.cm-field { padding-right: 8px; }
+.cm-w224 { width: 224px; }
+.cm-ta { height: 80px; padding-block: 8px; resize: vertical; }
 
-.community-search-row input,
-.community-search-row select,
-.community-share-form input[type='text'],
-.community-share-form select,
-.community-share-form textarea {
-  padding: 7px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--surface-alt);
-  color: var(--text);
-  font: inherit;
-}
+.cm-b { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 32px; padding-inline: 12px; border: 0; border-radius: var(--radius); background: var(--surface-hover); color: var(--text); font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; transition: background 120ms cubic-bezier(.2,.8,.2,1); }
+.cm-b:hover { background: #36363d; }
+.cm-b:active { background: #28282e; }
+.cm-b.cm-ghost { background: transparent; color: var(--text-dim); }
+.cm-b.cm-ghost:hover { background: var(--surface-alt); color: var(--text); }
+.cm-b.cm-pri { background: var(--tint); color: var(--tint-ink); }
+.cm-b.cm-pri:hover { background: #473a17; }
+.cm-b.cm-pri:active { background: #30270f; }
+.cm-b:disabled { opacity: .38; cursor: not-allowed; }
+.cm-b.cm-sm { height: 24px; padding-inline: 8px; font-size: 12px; }
 
-.community-search-row input {
-  flex: 1;
-  min-width: 0;
-}
+/* The rights confirmation is a real checkbox drawn as the mock's switch. */
+.cm-sw { -webkit-appearance: none; appearance: none; position: relative; width: 36px; height: 20px; margin: 0; padding: 0; border: 0; border-radius: 10px; background: var(--surface-hover); cursor: pointer; flex: none; }
+.cm-sw::after { content: ''; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--text-dim); transition: transform 120ms; }
+.cm-sw:checked { background: var(--tint); }
+.cm-sw:checked::after { transform: translateX(16px); background: var(--tint-ink); }
 
-.community-search-row select {
-  flex: 0 0 auto;
-}
+/* ---- browse and my uploads: the fingerprint cards ---- */
+.cm-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); justify-content: center; gap: 12px; }
+.cm-pcard { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 12px 12px; border: 0; border-radius: 12px; background: var(--surface-alt); text-align: center; min-width: 0; transition: background 120ms cubic-bezier(.2,.8,.2,1); }
+.cm-pcard:hover { background: var(--surface-hover); }
+.cm-pcard:hover .cm-chip { background: #36363d; }
+.cm-print { display: flex; align-items: flex-end; justify-content: center; gap: 3px; height: 64px; margin-bottom: 8px; }
+.cm-print i { width: 5px; border-radius: 2px; background: #6a6a72; }
+.cm-pname { max-width: 100%; font-size: 16px; line-height: 24px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cm-meta { max-width: 100%; font-size: 12px; line-height: 16px; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Not drawn in the mock; kept from the source, two lines at most. */
+.cm-desc { max-width: 100%; margin: 4px 0 0; font-size: 12px; line-height: 16px; color: var(--text-dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cm-chips { display: flex; justify-content: center; gap: 4px; height: 24px; margin-top: 4px; align-items: center; max-width: 100%; }
+.cm-chip { display: inline-block; height: 20px; padding-inline: 8px; border: 0; border-radius: 6px; background: var(--surface-hover); color: var(--text-dim); font-size: 12px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.cm-chip.cm-more { flex: none; }
+.cm-chip.cm-hot { background: #5a2020; color: #ffb4ab; flex: none; }
+.cm-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
+.cm-status { font-size: 12px; line-height: 16px; color: var(--text-dim); }
+.cm-status:empty { display: none; }
+.cm-report { display: flex; gap: 8px; justify-content: center; width: 100%; margin-top: 4px; }
+.cm-report .cm-field { flex: 1; }
+.cm-sentinel { height: 1px; }
 
-.community-status {
-  margin: 0 0 12px;
-  font-size: 12px;
-  color: var(--text-dim);
-  min-height: 16px;
-}
+/* ---- share ---- */
+.cm-sharef { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 640px; margin-inline: auto; }
+.cm-card { display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 16px; border-radius: 12px; background: var(--surface); }
+.cm-gh { margin: 0; text-align: left; color: var(--text-dim); padding-block: 8px 4px; font-size: 12px; line-height: 16px; font-weight: 600; }
+.cm-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px; padding-block: 6px; }
+.cm-sl { min-width: 0; } .cm-sl > span { display: block; } .cm-sl small { display: block; color: var(--text-dim); font-size: 12px; line-height: 16px; }
+.cm-trail { display: flex; align-items: center; gap: 8px; flex: none; color: var(--text-dim); }
+.cm-rights { cursor: pointer; }
+.cm-fl { display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 16px; color: var(--text-dim); min-width: 0; }
+.cm-fl .cm-field { color: var(--text); font-size: 14px; width: 100%; }
 
-.community-progress {
-  display: block;
-  width: 100%;
-  height: 6px;
-  margin: 0 0 8px;
-  appearance: none;
-  border: none;
-  border-radius: 3px;
-  background: var(--surface-alt);
-  overflow: hidden;
-}
+/* Upload progress: the mock's thin amber bar (.sb). */
+.cm-sb { height: 4px; border-radius: 2px; background: var(--surface-hover); overflow: hidden; }
+.cm-sb i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 2px; transition: width 200ms; }
 
-.community-progress::-webkit-progress-bar {
-  background: var(--surface-alt);
-}
+.cm-sizes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 16px; color: var(--text-dim); }
+.cm-size { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.cm-size.heavy { color: var(--danger); }
+.cm-size-name-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cm-size-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-size-detail { flex: none; font-variant-numeric: tabular-nums; }
 
-.community-progress::-webkit-progress-value {
-  background: var(--accent);
-  transition: width 0.2s ease;
-}
-
-.community-sizes {
-  list-style: none;
-  margin: 0 0 12px;
-  padding: 0;
-  font-size: 12px;
-}
-
-.community-size {
-  display: flex;
-  gap: 12px;
-  justify-content: space-between;
-  padding: 3px 6px;
-  border-radius: 4px;
-  color: var(--text-dim);
-}
-
-.community-size-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text);
-}
-
-.community-size-detail {
-  flex: 0 0 auto;
-  font-variant-numeric: tabular-nums;
-}
-
-.community-size.heavy {
-  background: var(--danger-soft, rgba(255, 107, 107, 0.12));
-}
-
-.community-size.heavy .community-size-detail {
-  color: var(--danger, #ff6b6b);
-}
-
-.community-results {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-}
-
-.community-sentinel {
-  height: 1px;
-}
-
-.community-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px;
-  border-radius: 10px;
-  background: var(--surface-alt);
-  border: 1px solid var(--border);
-}
-
-.community-card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.community-card-name {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Same amber as the Mixer's source badges. */
-.community-card-badge {
-  flex: 0 0 auto;
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(224, 175, 104, 0.18);
-  color: #e0af68;
-  border: 1px solid rgba(224, 175, 104, 0.4);
-  white-space: nowrap;
-}
-
-.community-card-meta {
-  font-size: 11px;
-  color: var(--text-dim);
-}
-
-.community-card-desc {
-  margin: 0;
-  font-size: 11px;
-  color: var(--text-dim);
-  white-space: pre-line;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.community-card-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.community-tag {
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-}
-
-.community-tag-more {
-  opacity: 0.7;
-}
-
-.community-card-footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: auto;
-  padding-top: 4px;
-}
-
-.community-card-status {
-  font-size: 11px;
-  color: var(--text-dim);
-  flex: 1;
-  min-width: 0;
-}
-
-.community-report-link {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 11px;
-  color: var(--text-dim);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.community-report-form {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.community-report-form select {
-  flex: 1;
-  min-width: 0;
-  padding: 4px 6px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-}
-
-.community-share-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 560px;
-}
-
-.community-share-form .field-label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--text-dim);
-}
-
-.community-share-form textarea {
-  resize: vertical;
-}
-
-.community-share-mode {
-  margin: 0;
-  font-size: 12px;
-  color: var(--accent);
-}
-
-.community-rights {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  font-size: 12px;
-  color: var(--text-dim);
-  cursor: pointer;
-}
-
-.community-share-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.community-size-name-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.community-cut-btn {
-  flex: 0 0 auto;
-  padding: 1px 8px;
-  font-size: 11px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.community-cut-btn:hover {
-  background: var(--surface-hover);
+@media (prefers-reduced-motion: reduce) { .cm-sw::after, .cm-sb i { transition: none; } }
+@media (max-width: 560px) {
+  .cm-row { flex-wrap: wrap; }
+  .cm-w224 { width: 100%; }
 }
