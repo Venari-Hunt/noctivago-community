@@ -104,6 +104,7 @@ export default class CommunityPlugin {
               <label class="cm-fl">Description<textarea id="community-share-description" class="cm-field cm-ta" maxlength="600" placeholder="What does it sound like? Where does it take you?"></textarea></label>
               <label class="cm-fl">Tags<input id="community-share-tags" class="cm-field" type="text" placeholder="rain, night, cozy" /></label>
               <label class="cm-fl">Your name (shown on the preset)<input id="community-share-author" class="cm-field" type="text" maxlength="40" /></label>
+              <div class="cm-row"><div class="cm-sl"><span>License</span><small>Each sound keeps its own credit</small></div><div class="cm-trail"><span class="cm-hint">CC0, CC BY, or license unknown</span></div></div>
               <label class="cm-row cm-rights"><div class="cm-sl"><span>I made these sounds or have the right to share them</span><small>Sounds imported from Freesound are linked, not re-uploaded.</small></div><div class="cm-trail"><input id="community-share-rights" class="cm-sw" type="checkbox" role="switch" /></div></label>
               <div class="cm-actions">
                 <button id="community-share-cancel" class="cm-b cm-ghost" type="button" hidden>Cancel update</button>
