@@ -147,6 +147,10 @@ export default class CommunityPlugin {
       shareProgress: q('#community-share-progress'),
       shareSizes: q('#community-share-sizes')
     }
+    // Share works in place on apps that have the morph states (2.0+, micro-interactions mock, row
+    // "Community upload"): Packing sounds, Uploading with a bar and percent, then Shared; a failure
+    // shows the reason in soft red. Older apps keep the plain button and the status line.
+    this.shareMorph = this.app.ui?.morphButton?.(this.els.shareSubmit) ?? null
 
     for (const pill of this.els.pills) {
       pill.addEventListener('click', () => this.showView(pill.dataset.view))
@@ -470,7 +474,9 @@ export default class CommunityPlugin {
     this.shareTarget = remote
     this.els.shareMode.hidden = !remote
     this.els.shareCancel.hidden = !remote
-    this.els.shareSubmit.querySelector('span').textContent = remote ? 'Update' : 'Share'
+    const label = remote ? 'Update' : 'Share'
+    if (this.shareMorph) this.shareMorph.setRest?.(`${icon('upload')}<span>${label}</span>`)
+    else this.els.shareSubmit.querySelector('span').textContent = label
     this.els.shareStatus.textContent = ''
     if (remote) {
       this.els.shareMode.textContent = `Updating "${remote.name}" - pick the local preset to upload in its place.`
@@ -535,7 +541,7 @@ export default class CommunityPlugin {
     const fits = total <= this.maxUploadBytes
     const limit = formatSize(this.maxUploadBytes)
     this.els.shareStatus.textContent = fits
-      ? `About ${formatSize(total)} now, under the ${limit} limit. Press ${this.els.shareSubmit.textContent.trim()} to upload.`
+      ? `About ${formatSize(total)} now, under the ${limit} limit. Press ${this.shareTarget ? 'Update' : 'Share'} to upload.`
       : `About ${formatSize(total)} now; the limit is ${limit}. Cut or remove more sounds.`
   }
 
@@ -555,9 +561,13 @@ export default class CommunityPlugin {
     status.textContent = 'Preparing…'
     this.showShareProgress(0)
     this.showShareSizes(null)
+    this.shareMorph?.working('Packing sounds')
     const stopProgress = this.api.community.onPublishProgress((update) => {
       if (update?.message) status.textContent = update.message
-      if (Number.isFinite(update?.fraction)) this.showShareProgress(update.fraction)
+      if (Number.isFinite(update?.fraction)) {
+        this.showShareProgress(update.fraction)
+        if (update.fraction > 0) this.shareMorph?.progress('Uploading', update.fraction * 100)
+      }
       if (update?.sounds) this.showShareSizes(update.sounds)
     })
     let result
@@ -582,10 +592,12 @@ export default class CommunityPlugin {
     }
     if (!result.ok) {
       status.textContent = result.error || 'Sharing failed.'
+      this.shareMorph?.fail(shareFailWords(result.error))
       if (result.sounds) this.showShareSizes(result.sounds, { markHeaviest: true })
       return
     }
     const wasUpdate = Boolean(this.shareTarget)
+    this.shareMorph?.done(wasUpdate ? 'Updated' : 'Shared')
     this.cutSet.clear()
     this.setShareTarget(null)
     this.showShareSizes(result.sounds ?? null)
@@ -593,4 +605,13 @@ export default class CommunityPlugin {
     status.textContent = `${wasUpdate ? 'Updated' : 'Shared'} "${result.preset.name}" (${plural(result.uploadedAudioCount, 'sound')} uploaded${linked}).`
     this.search()
   }
+}
+
+// The button has room for a short reason (the status line keeps the full one). A size refusal
+// keeps its numbers: "Too large: 64 MB of 50 MB".
+export function shareFailWords(error) {
+  const t = String(error || 'Sharing failed').trim().replace(/\.$/, '')
+  const size = t.match(/(\d+(?:\.\d+)?\s?MB)\D+?(\d+(?:\.\d+)?\s?MB)/)
+  if (/too (large|big)|over the|limit/i.test(t) && size) return `Too large: ${size[1]} of ${size[2]}`
+  return t.length > 36 ? t.slice(0, 35).trimEnd() + '…' : t
 }
